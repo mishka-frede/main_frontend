@@ -28,7 +28,7 @@ import Navbar from "../components/Navbar";
 
 function formatAddress(address) {
 
-    return `${address.street}, д. ${address.house}, кв. ${address.apartment}`;
+    return `${address.street}, д. ${address.house}, п. ${address.entrance || "-"}, кв. ${address.apartment}`;
 }
 
 

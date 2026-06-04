@@ -53,6 +53,7 @@ const profileFields = [
 const emptyAddress = {
     street: "",
     house: "",
+    entrance: "",
     apartment: "",
     personal_account: ""
 };
@@ -60,7 +61,7 @@ const emptyAddress = {
 
 function formatAddress(address) {
 
-    return `${address.street}, д. ${address.house}, кв. ${address.apartment}`;
+    return `${address.street}, д. ${address.house}, п. ${address.entrance || "-"}, кв. ${address.apartment}`;
 }
 
 
@@ -271,6 +272,7 @@ function ProfilePage() {
         setAddressForm({
             street: address.street || "",
             house: address.house || "",
+            entrance: address.entrance || "",
             apartment: address.apartment || "",
             personal_account: address.personal_account || ""
         });
@@ -560,6 +562,12 @@ function ProfilePage() {
                                         label="Дом"
                                         name="house"
                                         value={addressForm.house}
+                                        onChange={handleAddressChange}
+                                    />
+                                    <TextField
+                                        label="Подъезд"
+                                        name="entrance"
+                                        value={addressForm.entrance}
                                         onChange={handleAddressChange}
                                     />
                                     <TextField

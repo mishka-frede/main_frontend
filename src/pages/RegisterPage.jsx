@@ -36,6 +36,7 @@ function RegisterPage() {
             password: "",
             street: "",
             house: "",
+            entrance: "",
             apartment: "",
             personal_account: ""
         });
@@ -219,6 +220,15 @@ function RegisterPage() {
                                         label="Дом"
                                         name="house"
                                         value={formData.house}
+                                        required
+                                        fullWidth
+                                        onChange={handleChange}
+                                    />
+
+                                    <TextField
+                                        label="Подъезд"
+                                        name="entrance"
+                                        value={formData.entrance}
                                         required
                                         fullWidth
                                         onChange={handleChange}

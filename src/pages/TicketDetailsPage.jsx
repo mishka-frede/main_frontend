@@ -42,6 +42,14 @@ const feedbackTypeLabels = {
 };
 
 
+const roleLabels = {
+    admin: "Администратор",
+    dispatcher: "Диспетчер",
+    executor: "Исполнитель",
+    resident: "Жилец"
+};
+
+
 function TicketDetailsPage() {
 
     const { id } = useParams();
@@ -559,7 +567,17 @@ function TicketDetailsPage() {
                         {comments.map((comment) => (
                             <Card key={comment.id}>
                                 <CardContent>
-                                    <Typography>{comment.text}</Typography>
+                                    <Stack spacing={0.75}>
+                                        <Typography variant="body2" color="text.secondary">
+                                            {comment.author_name || `Пользователь #${comment.user_id}`}
+                                        </Typography>
+                                        {comment.author_role && (
+                                            <Typography variant="caption" color="text.secondary">
+                                                {roleLabels[comment.author_role] || comment.author_role}
+                                            </Typography>
+                                        )}
+                                        <Typography>{comment.text}</Typography>
+                                    </Stack>
                                 </CardContent>
                             </Card>
                         ))}

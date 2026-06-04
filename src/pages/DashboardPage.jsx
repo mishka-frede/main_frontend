@@ -210,7 +210,7 @@ function DashboardPage() {
                                             <Typography variant="body2">
                                                 Адрес:{" "}
                                                 {ticket.address
-                                                    ? `${ticket.address.street}, д. ${ticket.address.house}, кв. ${ticket.address.apartment}`
+                                                    ? `${ticket.address.street}, д. ${ticket.address.house}, п. ${ticket.address.entrance || "-"}, кв. ${ticket.address.apartment}`
                                                     : "не указан"}
                                             </Typography>
 

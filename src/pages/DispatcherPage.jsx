@@ -56,7 +56,7 @@ const statusColors = {
 
 function formatAddress(address) {
 
-    return `${address.street}, д. ${address.house}, кв. ${address.apartment}`;
+    return `${address.street}, д. ${address.house}, п. ${address.entrance || "-"}, кв. ${address.apartment}`;
 }
 
 
@@ -66,6 +66,9 @@ function DispatcherPage() {
         useState([]);
 
     const [pendingAddresses, setPendingAddresses] =
+        useState([]);
+
+    const [executors, setExecutors] =
         useState([]);
 
     const [error, setError] =
@@ -89,6 +92,9 @@ function DispatcherPage() {
     const [mergeSecondaryId, setMergeSecondaryId] =
         useState("");
 
+    const [mergeReason, setMergeReason] =
+        useState("");
+
     const [disputedTickets, setDisputedTickets] =
         useState([]);
 
@@ -108,6 +114,7 @@ function DispatcherPage() {
         fetchTickets();
         fetchPendingAddresses();
         fetchDisputedTickets();
+        fetchExecutors();
     }, []);
 
     const getAuthHeaders = () => ({
@@ -143,6 +150,22 @@ function DispatcherPage() {
             );
 
             setDisputedTickets(response.data);
+
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const fetchExecutors = async () => {
+
+        try {
+
+            const response = await api.get(
+                "/users/executors",
+                { headers: getAuthHeaders() }
+            );
+
+            setExecutors(response.data);
 
         } catch (err) {
             console.error(err);
@@ -248,6 +271,32 @@ function DispatcherPage() {
         }
     };
 
+    const assignExecutor = async (ticketId, executorId) => {
+
+        setError("");
+        setMessage("");
+
+        try {
+
+            await api.patch(
+                `/tickets/${ticketId}/executor`,
+                {
+                    executor_id: executorId ? Number(executorId) : null
+                },
+                {
+                    headers: getAuthHeaders()
+                }
+            );
+
+            setMessage("Исполнитель обновлен.");
+            fetchTickets();
+
+        } catch (err) {
+            console.error(err);
+            setError("Не удалось назначить исполнителя.");
+        }
+    };
+
     const fetchSubscribers = async (ticketId) => {
 
         const response = await api.get(
@@ -310,7 +359,8 @@ function DispatcherPage() {
                 "/tickets/merge",
                 {
                     primary_ticket_id: Number(mergePrimaryId),
-                    secondary_ticket_id: Number(mergeSecondaryId)
+                    secondary_ticket_id: Number(mergeSecondaryId),
+                    reason: mergeReason.trim() || null
                 },
                 {
                     headers: getAuthHeaders()
@@ -320,6 +370,7 @@ function DispatcherPage() {
             setMergeDialogOpen(false);
             setMergePrimaryId("");
             setMergeSecondaryId("");
+            setMergeReason("");
             setMessage("Заявки объединены.");
             fetchTickets();
 
@@ -534,6 +585,32 @@ function DispatcherPage() {
                                                         ? formatAddress(ticket.address)
                                                         : "не указан"}
                                                 </Typography>
+
+                                                <FormControl size="small" sx={{ maxWidth: 320 }}>
+                                                    <InputLabel>Исполнитель</InputLabel>
+                                                    <Select
+                                                        label="Исполнитель"
+                                                        value={ticket.assigned_executor_id || ""}
+                                                        onChange={(event) =>
+                                                            assignExecutor(
+                                                                ticket.id,
+                                                                event.target.value
+                                                            )
+                                                        }
+                                                    >
+                                                        <MenuItem value="">
+                                                            Не назначен
+                                                        </MenuItem>
+                                                        {executors.map((executor) => (
+                                                            <MenuItem
+                                                                key={executor.id}
+                                                                value={executor.id}
+                                                            >
+                                                                {executor.full_name}
+                                                            </MenuItem>
+                                                        ))}
+                                                    </Select>
+                                                </FormControl>
                                             </Stack>
 
                                             <Stack
@@ -611,6 +688,35 @@ function DispatcherPage() {
                                                 ))}
                                             </Stack>
                                         </Collapse>
+
+                                        {ticket.merge_history?.length > 0 && (
+                                            <Card variant="outlined">
+                                                <CardContent>
+                                                    <Stack spacing={1}>
+                                                        <Typography variant="subtitle2">
+                                                            История объединений
+                                                        </Typography>
+                                                        {ticket.merge_history.map((entry) => (
+                                                            <Box key={entry.id}>
+                                                                <Typography variant="body2">
+                                                                    Заявка #{entry.secondary_ticket_id} объединена с этой заявкой
+                                                                </Typography>
+                                                                <Typography variant="caption" color="text.secondary">
+                                                                    {entry.merged_by_name || `Пользователь #${entry.merged_by_user_id}`}
+                                                                    {" · "}
+                                                                    {new Date(entry.created_at).toLocaleString("ru-RU")}
+                                                                </Typography>
+                                                                {entry.reason && (
+                                                                    <Typography variant="body2" color="text.secondary">
+                                                                        Причина: {entry.reason}
+                                                                    </Typography>
+                                                                )}
+                                                            </Box>
+                                                        ))}
+                                                    </Stack>
+                                                </CardContent>
+                                            </Card>
+                                        )}
                                     </Stack>
                                 </CardContent>
                             </Card>
@@ -707,6 +813,17 @@ function DispatcherPage() {
                                 ))}
                             </Select>
                         </FormControl>
+
+                        <TextField
+                            fullWidth
+                            multiline
+                            minRows={3}
+                            label="Причина объединения"
+                            value={mergeReason}
+                            onChange={(event) =>
+                                setMergeReason(event.target.value)
+                            }
+                        />
                     </Stack>
                 </DialogContent>
                 <DialogActions>
