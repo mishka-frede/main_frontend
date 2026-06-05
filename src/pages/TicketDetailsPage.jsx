@@ -1,4 +1,5 @@
 import {
+    useCallback,
     useEffect,
     useState
 } from "react";
@@ -70,18 +71,11 @@ function TicketDetailsPage() {
     const [attachmentFiles, setAttachmentFiles] = useState([]);
     const [submittingFeedback, setSubmittingFeedback] = useState(false);
 
-    useEffect(() => {
-        fetchTicket();
-        fetchComments();
-        fetchFeedback();
-        fetchCanSubmit();
-    }, [id]);
-
-    const getAuthHeaders = () => ({
+    const getAuthHeaders = useCallback(() => ({
         Authorization: `Bearer ${localStorage.getItem("token")}`
-    });
+    }), []);
 
-    const fetchTicket = async () => {
+    const fetchTicket = useCallback(async () => {
 
         try {
 
@@ -95,9 +89,9 @@ function TicketDetailsPage() {
             console.error(err);
             setError("Не удалось загрузить заявку.");
         }
-    };
+    }, [getAuthHeaders, id]);
 
-    const fetchComments = async () => {
+    const fetchComments = useCallback(async () => {
 
         try {
 
@@ -110,9 +104,9 @@ function TicketDetailsPage() {
         } catch (err) {
             console.error(err);
         }
-    };
+    }, [getAuthHeaders, id]);
 
-    const fetchFeedback = async () => {
+    const fetchFeedback = useCallback(async () => {
 
         try {
 
@@ -125,9 +119,9 @@ function TicketDetailsPage() {
         } catch (err) {
             console.error(err);
         }
-    };
+    }, [getAuthHeaders, id]);
 
-    const fetchCanSubmit = async () => {
+    const fetchCanSubmit = useCallback(async () => {
 
         try {
 
@@ -142,7 +136,20 @@ function TicketDetailsPage() {
         } catch (err) {
             console.error(err);
         }
-    };
+    }, [getAuthHeaders, id]);
+
+    useEffect(() => {
+
+        const timeoutId = window.setTimeout(() => {
+            fetchTicket();
+            fetchComments();
+            fetchFeedback();
+            fetchCanSubmit();
+        }, 0);
+
+        return () => window.clearTimeout(timeoutId);
+
+    }, [fetchCanSubmit, fetchComments, fetchFeedback, fetchTicket]);
 
     const addComment = async () => {
 

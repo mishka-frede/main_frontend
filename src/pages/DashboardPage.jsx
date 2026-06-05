@@ -1,4 +1,5 @@
 import {
+    useCallback,
     useEffect,
     useState
 } from "react";
@@ -52,11 +53,7 @@ function DashboardPage() {
     const [error, setError] =
         useState("");
 
-    useEffect(() => {
-        fetchTickets();
-    }, []);
-
-    const fetchTickets = async () => {
+    const fetchTickets = useCallback(async () => {
 
         try {
 
@@ -79,7 +76,17 @@ function DashboardPage() {
             console.error(err);
             setError("Не удалось загрузить заявки.");
         }
-    };
+    }, []);
+
+    useEffect(() => {
+
+        const timeoutId = window.setTimeout(() => {
+            fetchTickets();
+        }, 0);
+
+        return () => window.clearTimeout(timeoutId);
+
+    }, [fetchTickets]);
 
     const stats = [
         {

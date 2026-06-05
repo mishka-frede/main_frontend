@@ -20,6 +20,28 @@ import {
     setToken
 } from "../auth/auth";
 
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+
+function validateLoginData(email, password) {
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!emailPattern.test(normalizedEmail)) {
+        return "Введите корректный email.";
+    }
+
+    if (!password.trim()) {
+        return "Введите пароль.";
+    }
+
+    if (password.length < 8) {
+        return "Пароль должен содержать минимум 8 символов.";
+    }
+
+    return "";
+}
+
 
 function LoginPage() {
 
@@ -34,13 +56,21 @@ function LoginPage() {
 
         e.preventDefault();
         setError("");
+
+        const validationError = validateLoginData(email, password);
+
+        if (validationError) {
+            setError(validationError);
+            return;
+        }
+
         setLoading(true);
 
         try {
 
             const formData = new FormData();
 
-            formData.append("username", email);
+            formData.append("username", email.trim().toLowerCase());
             formData.append("password", password);
 
             const response = await api.post(

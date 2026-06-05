@@ -1,4 +1,5 @@
 import {
+    useCallback,
     useEffect,
     useState
 } from "react";
@@ -90,12 +91,7 @@ function CreateTicketPage() {
     const [similarDialogOpen, setSimilarDialogOpen] =
         useState(false);
 
-    useEffect(() => {
-        loadAddresses();
-        loadCategories();
-    }, []);
-
-    const getAuthHeaders = () => {
+    const getAuthHeaders = useCallback(() => {
 
         const token =
             localStorage.getItem("token");
@@ -103,9 +99,9 @@ function CreateTicketPage() {
         return {
             Authorization: `Bearer ${token}`
         };
-    };
+    }, []);
 
-    const loadAddresses = async () => {
+    const loadAddresses = useCallback(async () => {
 
         try {
 
@@ -127,9 +123,9 @@ function CreateTicketPage() {
             console.error(err);
             setError("Не удалось загрузить подтвержденные адреса.");
         }
-    };
+    }, [getAuthHeaders]);
 
-    const loadCategories = async () => {
+    const loadCategories = useCallback(async () => {
 
         try {
 
@@ -150,7 +146,18 @@ function CreateTicketPage() {
             console.error(err);
             setError("Не удалось загрузить категории заявок.");
         }
-    };
+    }, [getAuthHeaders]);
+
+    useEffect(() => {
+
+        const timeoutId = window.setTimeout(() => {
+            loadAddresses();
+            loadCategories();
+        }, 0);
+
+        return () => window.clearTimeout(timeoutId);
+
+    }, [loadAddresses, loadCategories]);
 
     const getApiError = (err) => {
 

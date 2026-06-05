@@ -1,4 +1,4 @@
-import {
+﻿import {
     useState
 } from "react";
 
@@ -22,6 +22,83 @@ import {
 } from "@mui/material";
 
 import api from "../api/api";
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+
+function normalizeRegistrationData(formData) {
+
+    return {
+        ...formData,
+        full_name: formData.full_name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        phone: formData.phone.trim(),
+        street: formData.street.trim(),
+        house: formData.house.trim(),
+        entrance: formData.entrance.trim(),
+        apartment: formData.apartment.trim(),
+        personal_account: formData.personal_account.trim()
+    };
+}
+
+
+function validatePassword(password) {
+
+    if (password.length < 8) {
+        return "Пароль должен содержать минимум 8 символов.";
+    }
+
+    if (![...password].some((char) => (
+        /[A-Za-z]/.test(char) ||
+        char.toLowerCase() !== char.toUpperCase()
+    ))) {
+        return "Пароль должен содержать хотя бы одну букву.";
+    }
+
+    if (!/\d/.test(password)) {
+        return "Пароль должен содержать хотя бы одну цифру.";
+    }
+
+    if (password.trim() !== password) {
+        return "Пароль не должен начинаться или заканчиваться пробелом.";
+    }
+
+    return "";
+}
+
+
+function validateRegistrationData(data) {
+
+    if (data.full_name.length < 2) {
+        return "Укажите ФИО.";
+    }
+
+    if (!emailPattern.test(data.email)) {
+        return "Введите корректный email.";
+    }
+
+    if (data.phone.length < 5) {
+        return "Укажите корректный телефон.";
+    }
+
+    const passwordError = validatePassword(data.password);
+
+    if (passwordError) {
+        return passwordError;
+    }
+
+    if (
+        data.street.length < 2 ||
+        !data.house ||
+        !data.entrance ||
+        !data.apartment ||
+        data.personal_account.length < 3
+    ) {
+        return "Проверьте корректность адреса и лицевого счета.";
+    }
+
+    return "";
+}
 
 
 function RegisterPage() {
@@ -82,10 +159,14 @@ function RegisterPage() {
         e.preventDefault();
         setError("");
 
-        if (formData.password.length < 5) {
-            setError("Пароль должен содержать минимум 5 символов.");
+        const normalizedData = normalizeRegistrationData(formData);
+        const validationError = validateRegistrationData(normalizedData);
+
+        if (validationError) {
+            setError(validationError);
             return;
         }
+
 
         if (!personalDataConsent) {
             setError("Необходимо дать согласие на обработку персональных данных.");
@@ -100,6 +181,7 @@ function RegisterPage() {
                 "/auth/register",
                 {
                     ...formData,
+                    ...normalizedData,
                     role: "resident",
                     personal_data_consent: true
                 }
@@ -194,7 +276,7 @@ function RegisterPage() {
                                         value={formData.password}
                                         required
                                         fullWidth
-                                        helperText="Минимум 5 символов"
+                                        helperText="Минимум 8 символов, буква и цифра"
                                         onChange={handleChange}
                                     />
 

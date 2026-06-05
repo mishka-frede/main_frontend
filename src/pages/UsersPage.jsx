@@ -1,4 +1,5 @@
 import {
+    useCallback,
     useEffect,
     useState
 } from "react";
@@ -63,15 +64,11 @@ function UsersPage() {
 
     const [creatingStaff, setCreatingStaff] = useState(false);
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
-    const getAuthHeaders = () => ({
+    const getAuthHeaders = useCallback(() => ({
         Authorization: `Bearer ${localStorage.getItem("token")}`
-    });
+    }), []);
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
 
         setError("");
 
@@ -95,7 +92,17 @@ function UsersPage() {
             console.error(err);
             setError("Не удалось загрузить данные.");
         }
-    };
+    }, [getAuthHeaders]);
+
+    useEffect(() => {
+
+        const timeoutId = window.setTimeout(() => {
+            loadData();
+        }, 0);
+
+        return () => window.clearTimeout(timeoutId);
+
+    }, [loadData]);
 
     const residentUsers = users.filter(
         (user) => user.role === "resident"

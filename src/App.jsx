@@ -35,6 +35,12 @@ from "./pages/UsersPage";
 import NotificationsPage
 from "./pages/NotificationsPage";
 
+import ExecutorTicketsPage
+from "./pages/ExecutorTicketsPage";
+
+import ActionLogPage
+from "./pages/ActionLogPage";
+
 import {
     getHomePath,
     getRole,
@@ -123,6 +129,28 @@ function App() {
                 />
 
                 <Route
+                    path="/action-log"
+                    element={
+                        <ProtectedRoute>
+                            <RoleRoute roles={["dispatcher"]}>
+                                <ActionLogPage />
+                            </RoleRoute>
+                        </ProtectedRoute>
+                    }
+                />
+
+                <Route
+                    path="/executor-tickets"
+                    element={
+                        <ProtectedRoute>
+                            <RoleRoute roles={["executor"]}>
+                                <ExecutorTicketsPage />
+                            </RoleRoute>
+                        </ProtectedRoute>
+                    }
+                />
+
+                <Route
                     path="/users"
                     element={
                         <ProtectedRoute>
@@ -137,7 +165,7 @@ function App() {
                     path="/tickets/:id"
                     element={
                         <ProtectedRoute>
-                            <RoleRoute roles={["resident", "dispatcher"]}>
+                            <RoleRoute roles={["resident", "dispatcher", "executor"]}>
                                 <TicketDetailsPage />
                             </RoleRoute>
                         </ProtectedRoute>

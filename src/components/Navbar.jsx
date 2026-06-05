@@ -55,6 +55,10 @@ function Navbar() {
                         to: "/dispatcher"
                     },
                     {
+                        label: "Журнал",
+                        to: "/action-log"
+                    },
+                    {
                         label: "Уведомления",
                         to: "/notifications"
                     },
@@ -65,6 +69,10 @@ function Navbar() {
                 ]
                 : role === "executor"
                     ? [
+                        {
+                            label: "Мои заявки",
+                            to: "/executor-tickets"
+                        },
                         {
                             label: "Уведомления",
                             to: "/notifications"

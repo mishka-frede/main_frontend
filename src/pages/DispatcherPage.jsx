@@ -1,4 +1,5 @@
 import {
+    useCallback,
     useEffect,
     useState
 } from "react";
@@ -71,6 +72,9 @@ function DispatcherPage() {
     const [executors, setExecutors] =
         useState([]);
 
+    const [categories, setCategories] =
+        useState([]);
+
     const [error, setError] =
         useState("");
 
@@ -110,25 +114,40 @@ function DispatcherPage() {
     const [resolveStatus, setResolveStatus] =
         useState("in_progress");
 
-    useEffect(() => {
-        fetchTickets();
-        fetchPendingAddresses();
-        fetchDisputedTickets();
-        fetchExecutors();
-    }, []);
+    const [ticketSearch, setTicketSearch] =
+        useState("");
 
-    const getAuthHeaders = () => ({
+    const [ticketStatusFilter, setTicketStatusFilter] =
+        useState("");
+
+    const [ticketPriorityFilter, setTicketPriorityFilter] =
+        useState("");
+
+    const [ticketCategoryFilter, setTicketCategoryFilter] =
+        useState("");
+
+    const [ticketExecutorFilter, setTicketExecutorFilter] =
+        useState("");
+
+    const getAuthHeaders = useCallback(() => ({
         Authorization: `Bearer ${localStorage.getItem("token")}`
-    });
+    }), []);
 
-    const fetchTickets = async () => {
+    const fetchTickets = useCallback(async () => {
 
         try {
 
             const response = await api.get(
                 "/tickets/all",
                 {
-                    headers: getAuthHeaders()
+                    headers: getAuthHeaders(),
+                    params: {
+                        search: ticketSearch.trim() || undefined,
+                        status: ticketStatusFilter || undefined,
+                        priority: ticketPriorityFilter || undefined,
+                        category_id: ticketCategoryFilter || undefined,
+                        assigned_executor_id: ticketExecutorFilter || undefined
+                    }
                 }
             );
 
@@ -138,9 +157,16 @@ function DispatcherPage() {
             console.error(err);
             setError("Не удалось загрузить заявки. Проверьте права диспетчера.");
         }
-    };
+    }, [
+        getAuthHeaders,
+        ticketCategoryFilter,
+        ticketExecutorFilter,
+        ticketPriorityFilter,
+        ticketSearch,
+        ticketStatusFilter
+    ]);
 
-    const fetchDisputedTickets = async () => {
+    const fetchDisputedTickets = useCallback(async () => {
 
         try {
 
@@ -154,9 +180,9 @@ function DispatcherPage() {
         } catch (err) {
             console.error(err);
         }
-    };
+    }, [getAuthHeaders]);
 
-    const fetchExecutors = async () => {
+    const fetchExecutors = useCallback(async () => {
 
         try {
 
@@ -169,6 +195,67 @@ function DispatcherPage() {
 
         } catch (err) {
             console.error(err);
+        }
+    }, [getAuthHeaders]);
+
+    const fetchCategories = useCallback(async () => {
+
+        try {
+
+            const response = await api.get(
+                "/categories/",
+                { headers: getAuthHeaders() }
+            );
+
+            setCategories(response.data);
+
+        } catch (err) {
+            console.error(err);
+        }
+    }, [getAuthHeaders]);
+
+    const resetTicketFilters = () => {
+
+        setTicketSearch("");
+        setTicketStatusFilter("");
+        setTicketPriorityFilter("");
+        setTicketCategoryFilter("");
+        setTicketExecutorFilter("");
+    };
+
+    const exportTickets = async () => {
+
+        setError("");
+
+        try {
+
+            const response = await api.get(
+                "/tickets/export",
+                {
+                    headers: getAuthHeaders(),
+                    responseType: "blob",
+                    params: {
+                        search: ticketSearch.trim() || undefined,
+                        status: ticketStatusFilter || undefined,
+                        priority: ticketPriorityFilter || undefined,
+                        category_id: ticketCategoryFilter || undefined,
+                        assigned_executor_id: ticketExecutorFilter || undefined
+                    }
+                }
+            );
+
+            const url = window.URL.createObjectURL(response.data);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "tickets-report.csv";
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+
+        } catch (err) {
+            console.error(err);
+            setError("Не удалось выгрузить отчет.");
         }
     };
 
@@ -209,7 +296,7 @@ function DispatcherPage() {
         }
     };
 
-    const fetchPendingAddresses = async () => {
+    const fetchPendingAddresses = useCallback(async () => {
 
         try {
 
@@ -225,7 +312,7 @@ function DispatcherPage() {
         } catch (err) {
             console.error(err);
         }
-    };
+    }, [getAuthHeaders]);
 
     const verifyAddress = async (addressLinkId) => {
 
@@ -385,6 +472,34 @@ function DispatcherPage() {
         }
     };
 
+    useEffect(() => {
+
+        const timeoutId = window.setTimeout(() => {
+            fetchPendingAddresses();
+            fetchDisputedTickets();
+            fetchExecutors();
+            fetchCategories();
+        }, 0);
+
+        return () => window.clearTimeout(timeoutId);
+
+    }, [
+        fetchCategories,
+        fetchDisputedTickets,
+        fetchExecutors,
+        fetchPendingAddresses
+    ]);
+
+    useEffect(() => {
+
+        const timeoutId = window.setTimeout(() => {
+            fetchTickets();
+        }, 300);
+
+        return () => window.clearTimeout(timeoutId);
+
+    }, [fetchTickets]);
+
     return (
 
         <Box sx={{ minHeight: "100vh" }}>
@@ -520,6 +635,114 @@ function DispatcherPage() {
                                         </CardContent>
                                     </Card>
                                 ))}
+                            </Stack>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardContent>
+                            <Stack spacing={2}>
+                                <TextField
+                                    fullWidth
+                                    label="Поиск"
+                                    value={ticketSearch}
+                                    onChange={(event) =>
+                                        setTicketSearch(event.target.value)
+                                    }
+                                />
+
+                                <Stack
+                                    direction={{ xs: "column", md: "row" }}
+                                    spacing={2}
+                                >
+                                    <FormControl fullWidth size="small">
+                                        <InputLabel>Статус</InputLabel>
+                                        <Select
+                                            label="Статус"
+                                            value={ticketStatusFilter}
+                                            onChange={(event) =>
+                                                setTicketStatusFilter(event.target.value)
+                                            }
+                                        >
+                                            <MenuItem value="">Все</MenuItem>
+                                            {Object.entries(statusLabels).map(([value, label]) => (
+                                                <MenuItem key={value} value={value}>
+                                                    {label}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+
+                                    <FormControl fullWidth size="small">
+                                        <InputLabel>Приоритет</InputLabel>
+                                        <Select
+                                            label="Приоритет"
+                                            value={ticketPriorityFilter}
+                                            onChange={(event) =>
+                                                setTicketPriorityFilter(event.target.value)
+                                            }
+                                        >
+                                            <MenuItem value="">Все</MenuItem>
+                                            <MenuItem value="low">Низкий</MenuItem>
+                                            <MenuItem value="medium">Средний</MenuItem>
+                                            <MenuItem value="high">Высокий</MenuItem>
+                                            <MenuItem value="urgent">Срочный</MenuItem>
+                                        </Select>
+                                    </FormControl>
+
+                                    <FormControl fullWidth size="small">
+                                        <InputLabel>Категория</InputLabel>
+                                        <Select
+                                            label="Категория"
+                                            value={ticketCategoryFilter}
+                                            onChange={(event) =>
+                                                setTicketCategoryFilter(event.target.value)
+                                            }
+                                        >
+                                            <MenuItem value="">Все</MenuItem>
+                                            {categories.map((category) => (
+                                                <MenuItem key={category.id} value={category.id}>
+                                                    {category.name}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+
+                                    <FormControl fullWidth size="small">
+                                        <InputLabel>Исполнитель</InputLabel>
+                                        <Select
+                                            label="Исполнитель"
+                                            value={ticketExecutorFilter}
+                                            onChange={(event) =>
+                                                setTicketExecutorFilter(event.target.value)
+                                            }
+                                        >
+                                            <MenuItem value="">Все</MenuItem>
+                                            {executors.map((executor) => (
+                                                <MenuItem key={executor.id} value={executor.id}>
+                                                    {executor.full_name}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Stack>
+
+                                <Box>
+                                    <Stack direction="row" spacing={1}>
+                                        <Button
+                                            variant="text"
+                                            onClick={resetTicketFilters}
+                                        >
+                                            Сбросить
+                                        </Button>
+                                        <Button
+                                            variant="outlined"
+                                            onClick={exportTickets}
+                                        >
+                                            Экспорт CSV
+                                        </Button>
+                                    </Stack>
+                                </Box>
                             </Stack>
                         </CardContent>
                     </Card>
@@ -832,7 +1055,11 @@ function DispatcherPage() {
                     </Button>
                     <Button
                         variant="contained"
-                        disabled={!mergePrimaryId || !mergeSecondaryId}
+                        disabled={
+                            !mergePrimaryId ||
+                            !mergeSecondaryId ||
+                            !mergeReason.trim()
+                        }
                         onClick={mergeTickets}
                     >
                         Объединить

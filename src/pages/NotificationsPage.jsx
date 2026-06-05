@@ -1,4 +1,5 @@
 import {
+    useCallback,
     useEffect,
     useState
 } from "react";
@@ -31,15 +32,11 @@ function NotificationsPage() {
     const [error, setError] =
         useState("");
 
-    useEffect(() => {
-        loadNotifications();
-    }, []);
-
-    const getAuthHeaders = () => ({
+    const getAuthHeaders = useCallback(() => ({
         Authorization: `Bearer ${localStorage.getItem("token")}`
-    });
+    }), []);
 
-    const loadNotifications = async () => {
+    const loadNotifications = useCallback(async () => {
 
         try {
 
@@ -56,7 +53,17 @@ function NotificationsPage() {
             console.error(err);
             setError("Не удалось загрузить уведомления.");
         }
-    };
+    }, [getAuthHeaders]);
+
+    useEffect(() => {
+
+        const timeoutId = window.setTimeout(() => {
+            loadNotifications();
+        }, 0);
+
+        return () => window.clearTimeout(timeoutId);
+
+    }, [loadNotifications]);
 
     const markRead = async (notificationId) => {
 

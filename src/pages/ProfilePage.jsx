@@ -1,4 +1,5 @@
 import {
+    useCallback,
     useEffect,
     useMemo,
     useState
@@ -109,27 +110,7 @@ function ProfilePage() {
         [activeFieldKey]
     );
 
-    useEffect(() => {
-        loadProfile();
-    }, []);
-
-    useEffect(() => {
-
-        if (hasAddresses) {
-            loadAddresses();
-        }
-
-    }, [hasAddresses]);
-
-    useEffect(() => {
-
-        if (activeField) {
-            setDraftValue(profile[activeField.key] || "");
-        }
-
-    }, [activeField, profile]);
-
-    const getAuthHeaders = () => {
+    const getAuthHeaders = useCallback(() => {
 
         const token =
             localStorage.getItem("token");
@@ -137,9 +118,9 @@ function ProfilePage() {
         return {
             Authorization: `Bearer ${token}`
         };
-    };
+    }, []);
 
-    const loadProfile = async () => {
+    const loadProfile = useCallback(async () => {
 
         try {
 
@@ -151,12 +132,15 @@ function ProfilePage() {
                     }
                 );
 
-            setProfile({
+            const nextProfile = {
                 full_name: res.data.full_name || "",
                 email: res.data.email || "",
                 phone: res.data.phone || "",
                 password: ""
-            });
+            };
+
+            setProfile(nextProfile);
+            setDraftValue(nextProfile.full_name || "");
 
             setHasAddresses(
                 res.data.has_addresses !== false
@@ -166,9 +150,9 @@ function ProfilePage() {
             console.error(err);
             setError("Не удалось загрузить профиль.");
         }
-    };
+    }, [getAuthHeaders]);
 
-    const loadAddresses = async () => {
+    const loadAddresses = useCallback(async () => {
 
         try {
 
@@ -186,7 +170,32 @@ function ProfilePage() {
             console.error(err);
             setError("Не удалось загрузить адреса.");
         }
-    };
+    }, [getAuthHeaders]);
+
+    useEffect(() => {
+
+        const timeoutId = window.setTimeout(() => {
+            loadProfile();
+        }, 0);
+
+        return () => window.clearTimeout(timeoutId);
+
+    }, [loadProfile]);
+
+    useEffect(() => {
+
+        if (hasAddresses) {
+
+            const timeoutId = window.setTimeout(() => {
+                loadAddresses();
+            }, 0);
+
+            return () => window.clearTimeout(timeoutId);
+        }
+
+        return undefined;
+
+    }, [hasAddresses, loadAddresses]);
 
     const selectField = (field) => {
 
